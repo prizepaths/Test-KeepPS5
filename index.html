@@ -5,14 +5,13 @@
 <meta name="viewport" content="width=device-width,initial-scale=1"/>
 <title>Survey</title>
 <style>
-.brand img.logo { height:36px; display:block; filter: invert(1) brightness(2); }
   :root { --accent:#000; --max:980px; --button-width: 520px; }
   body { margin:0; font-family: system-ui,-apple-system,Segoe UI,Arial,sans-serif; background:#fff; color:#333; }
   header, footer { background:var(--accent); color:#fff; }
   header { padding:16px 0; }
   footer { padding:18px 0; margin-top:40px; }
   .brand { max-width:var(--max); margin:0 auto; padding:0 20px; display:flex; align-items:center; justify-content:space-between; }
-  .brand h1 { font-size:18px; margin:0; font-weight:600; letter-spacing:.3px; }
+  .brand strong { font-size:18px; font-weight:600; letter-spacing:.3px; }
   main { max-width:var(--max); margin:24px auto; padding:0 20px; }
   .stage { display:flex; flex-direction:column; align-items:center; }
   .progress { height:8px; background:#eee; border-radius:5px; width:100%; overflow:hidden; margin:10px 0 26px; }
@@ -32,12 +31,11 @@
 </head>
 <body>
   <header>
-  <div class="brand">
-    <strong>Test &amp; Keep a PS5</strong>
-  </div>
-</header>
-
-
+    <div class="brand">
+      <strong>Test &amp; Keep a PS5</strong>
+      <div></div>
+    </div>
+  </header>
 
   <main>
     <div class="progress"><div id="bar" class="bar"></div></div>
@@ -50,7 +48,7 @@
   </footer>
 
 <script>
-const FORM_ENDPOINT = '';       // add later when wiring Google Sheets
+const FORM_ENDPOINT = 'https://script.google.com/macros/s/AKfycbxmXgKn16LDRjB6O3mkmzL5syWdqGp0Hkb3G_UY4YCd8_96W75WP60Eczqkl-zKWm2g_Q/exec';
 const RESULTS_URL   = 'results.html';
 
 let config=null, step=0, answers={}, locking=false;
@@ -62,8 +60,8 @@ async function loadConfig(){
   return r.json();
 }
 function setChrome(){
-  $('#title').textContent = config.title || 'Survey';
-  const pct = Math.round(((step+1)/config.screens.length)*100);
+  const total = (config?.screens?.length || 1);
+  const pct = Math.round(((step+1)/total)*100);
   $('#bar').style.width = pct + '%';
 }
 function render(){
@@ -86,6 +84,23 @@ function render(){
     host.appendChild(cont);
   }
 
+  if (s.kind === 'fields') {
+    host.insertAdjacentHTML('beforeend', `<div class="question">${s.label||''}</div>`);
+    host.insertAdjacentHTML('beforeend', `
+      <div style="max-width:520px;margin:0 auto">
+        <input id="name" placeholder="Full name" style="width:100%;padding:12px;border:1px solid #ddd;border-radius:8px;margin-bottom:8px">
+        <input id="email" type="email" placeholder="you@example.com" style="width:100%;padding:12px;border:1px solid #ddd;border-radius:8px">
+      </div>`);
+    const next=document.createElement('button'); next.className='btn'; next.textContent='Next';
+    next.onclick=()=>{
+      const n=$('#name').value.trim(), e=$('#email').value.trim();
+      if(!n||!e) return alert('Please enter name and email');
+      answers.name=n; answers.email=e; step++; render();
+    };
+    host.appendChild(next);
+    return;
+  }
+
   if (s.kind === 'radio') {
     const q = document.createElement('div');
     q.className = 'question';
@@ -100,34 +115,60 @@ function render(){
       b.onclick = ()=>{
         if (locking) return; locking=true;
         answers[s.id] = o.value || o.label;
-        if (o.href) window.open(o.href, '_blank', 'noopener');
+
+        if (o.href) {
+          try {
+            navigator.sendBeacon?.(FORM_ENDPOINT, new Blob([JSON.stringify({
+              event:'affiliate_click',
+              question_id:s.id,
+              option_value:o.value||o.label,
+              url:o.href,
+              user_agent:navigator.userAgent
+            })],{type:'application/json'}));
+          } catch(_) {}
+          window.open(o.href, '_blank', 'noopener');
+        }
+
         step++;
         if (step < config.screens.length) render(); else finish();
         setTimeout(()=>locking=false, 120);
       };
       host.appendChild(b);
     });
-    return; // don't add Next on radio screens
+    return;
   }
 
-  // content-only screen = Next button
   const next = document.createElement('button');
-  next.className = 'btn';
-  next.textContent = 'Next';
+  next.className='btn'; next.textContent='Next';
   next.onclick = ()=>{ step++; (step < config.screens.length) ? render() : finish(); };
   host.appendChild(next);
 }
-function finish(){ location.href = RESULTS_URL; }
+
+async function finish(){
+  try{
+    const p=new URL(location.href).searchParams;
+    await fetch(FORM_ENDPOINT,{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({
+        event:'response',
+        name:answers.name||'',
+        email:answers.email||'',
+        answers,
+        user_agent:navigator.userAgent,
+        utm_source:p.get('utm_source')||'github-pages',
+        utm_medium:p.get('utm_medium')||'survey',
+        utm_campaign:p.get('utm_campaign')||''
+      }),
+      mode:'no-cors'
+    });
+  }catch(e){ console.error(e); }
+  location.href = RESULTS_URL;
+}
 
 (async function(){
-  try {
-    config = await loadConfig();
-    step = 0;
-    render();
-  } catch (e) {
-    $('#screen').innerHTML = '<p style="color:#c00;text-align:center;margin:24px 0;">Could not load survey-config.json</p>';
-    console.error(e);
-  }
+  try { config = await loadConfig(); step = 0; render(); }
+  catch (e) { $('#screen').innerHTML = '<p style="color:#c00;text-align:center;margin:24px 0;">Could not load survey-config.json</p>'; console.error(e); }
 })();
 </script>
 </body>
