@@ -9,13 +9,11 @@
   body { margin:0; font-family: system-ui,-apple-system,Segoe UI,Arial,sans-serif; background:#fff; color:#333; height:100vh; display:flex; flex-direction:column; }
   header, footer { background:var(--accent); color:#fff; }
   header { padding:16px 0; }
-  footer { padding:18px 0; margin-top:40px; }
+  footer { padding:18px 0; }
   .brand { max-width:var(--max); margin:0 auto; padding:0 20px; display:flex; align-items:center; justify-content:space-between; }
   .brand strong { font-size:18px; font-weight:600; letter-spacing:.3px; }
   main { flex:1; display:flex; flex-direction:column; justify-content:center; align-items:center; width:100%; max-width:var(--max); margin:0 auto; padding:20px; }
-  .stage { display:flex; flex-direction:column; align-items:center; }
-  .progress { height:8px; background:#eee; border-radius:5px; width:100%; overflow:hidden; margin:10px 0 26px; }
-  .bar { height:100%; width:0%; background:var(--accent); transition:width .25s; }
+  .stage { display:flex; flex-direction:column; align-items:center; width:100%; }
   .question { font-size:22px; line-height:1.4; color:#666; text-align:center; margin:22px 0 18px; }
   .btn {
     display:block; width:100%; max-width:var(--button-width);
@@ -38,7 +36,6 @@
   </header>
 
   <main>
-    <!-- progress removed -->
     <section id="screen" class="stage"></section>
     <p class="notice">Affiliate disclosure: some links may be affiliate; we may earn a commission at no extra cost to you.</p>
   </main>
@@ -55,25 +52,21 @@ let config=null, step=0, answers={}, locking=false;
 const $ = (s, r=document)=>r.querySelector(s);
 
 async function loadConfig(){
-  const r = await fetch('survey-config.json', {cache:'no-store'});
-  if(!r.ok) throw new Error('fetch failed');
+  const url = 'survey-config.json?v=' + Date.now(); // cache-bust
+  const r = await fetch(url, {cache:'no-store'});
+  if(!r.ok) throw new Error('fetch failed ' + r.status);
   return r.json();
-}
-function setChrome(){
-  const total = (config?.screens?.length || 1);
-  const pct = Math.round(((step+1)/total)*100);
-  $('#bar').style.width = pct + '%';
 }
 function render(){
   const s = config.screens[step];
   const host = $('#screen');
   host.innerHTML = '';
-  setChrome();
 
-  if (s.html || s.image) {
+  // content & optional image
+  if (s.html || s.image || (s.label && s.kind!=='radio' && s.kind!=='fields')) {
     const cont = document.createElement('div');
     cont.className = 'content';
-    if (s.label && s.kind!=='radio') {
+    if (s.label && s.kind!=='radio' && s.kind!=='fields') {
       const h = document.createElement('div');
       h.className='question';
       h.textContent = s.label;
@@ -84,6 +77,7 @@ function render(){
     host.appendChild(cont);
   }
 
+  // fields (name/email)
   if (s.kind === 'fields') {
     host.insertAdjacentHTML('beforeend', `<div class="question">${s.label||''}</div>`);
     host.insertAdjacentHTML('beforeend', `
@@ -101,6 +95,7 @@ function render(){
     return;
   }
 
+  // radio question
   if (s.kind === 'radio') {
     const q = document.createElement('div');
     q.className = 'question';
@@ -138,6 +133,7 @@ function render(){
     return;
   }
 
+  // content-only screen => Next
   const next = document.createElement('button');
   next.className='btn'; next.textContent='Next';
   next.onclick = ()=>{ step++; (step < config.screens.length) ? render() : finish(); };
