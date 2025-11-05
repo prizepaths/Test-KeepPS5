@@ -14,6 +14,8 @@
   .brand strong { font-size:18px; font-weight:600; letter-spacing:.3px; }
   main { flex:1; display:flex; flex-direction:column; justify-content:center; align-items:center; width:100%; max-width:var(--max); margin:0 auto; padding:20px; }
   .stage { display:flex; flex-direction:column; align-items:center; }
+  .progress { height:8px; background:#eee; border-radius:5px; width:100%; overflow:hidden; margin:10px 0 26px; }
+  .bar { height:100%; width:0%; background:var(--accent); transition:width .25s; }
   .question { font-size:22px; line-height:1.4; color:#666; text-align:center; margin:22px 0 18px; }
   .btn {
     display:block; width:100%; max-width:var(--button-width);
@@ -36,6 +38,13 @@
   </header>
 
   <main>
+    <div class="progress"><div id="bar" class="bar"></div></div>
+    <section id="screen" class="stage"></section>
+    <p class="notice">Affiliate disclosure: some links may be affiliate; we may earn a commission at no extra cost to you.</p>
+  </main>
+
+  <footer>
+    <div class="brand"><small>© PrizePaths</small><small></small></div>
   </footer>
 
 <script>
