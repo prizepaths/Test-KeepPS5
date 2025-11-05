@@ -1,30 +1,75 @@
 {
-  "title": "Daily Picks",
+  "title": "Test and Keep a PS5",
   "screens": [
+    {
+      "type": "question",
+      "kind": "fields",
+      "label": "Fill out name and email",
+      "fields": ["name", "email"]
+    },
     {
       "type": "question",
       "kind": "radio",
       "id": "q1",
-      "label": "Which of these would you most likely spend money on?",
+      "label": "Do you want to test & receive free products?",
       "options": [
-        "Beauty Products",
-        "Home Decor",
-        "Clothing",
-        "Food",
-        "None of these"
+        "Absolutely",
+        "YES I'd love to",
+        "NO I'll miss out"
       ]
     },
     {
       "type": "question",
       "kind": "radio",
       "id": "q2",
-      "label": "Earn Rewards For Scanning Your Groceries!",
-      "html": "<p style='max-width:720px;margin:0 auto 8px;color:#666;line-height:1.5;text-align:center'>Scan your groceries and be rewarded with gift cards, sweepstakes entries and more! Each week you participate, you earn reward points redeemable for a wide variety of gift cards. You'll also receive additional rewards and incentives for taking part in surveys and special programs. The more you participate the more you earn!</p>",
-      "image": "https://via.placeholder.com/640x360?text=Rewards+Image",
+      "label": "When was the last time you did a product test?",
       "options": [
-        { "label": "YES PLEASE! >", "href": "https://example.com/your-affiliate-link" },
-        { "label": "No thanks" }
+        "Within the last 6 months",
+        "Within the last year",
+        "Over a year ago",
+        "I never have"
       ]
+    },
+    {
+      "type": "question",
+      "kind": "radio",
+      "id": "q3",
+      "label": "How much do you spend on groceries each week?",
+      "options": [
+        "Under $100",
+        "$100 - $199",
+        "$200 - $300",
+        "$300 +"
+      ]
+    },
+    {
+      "type": "question",
+      "kind": "radio",
+      "id": "q4",
+      "label": "Would you like to receive a Free Healthy Snack Box?",
+      "options": [
+        {
+          "label": "Yes please",
+          "href": "https://la.luxeads.com/aff_c?offer_id=4200&aff_id=4555"
+        },
+        { "label": "No Thanks" }
+      ]
+    },
+    {
+      "type": "question",
+      "kind": "radio",
+      "id": "q5",
+      "label": "How much do you spend on subscriptions each month?",
+      "options": [
+        "Under $50",
+        "$50 - $150",
+        "$150 - $300",
+        "Over $300"
+      ]
+    },
+    {
+      "type": "content",
+      "html": "<h2>Thank you!</h2><p>Your responses have been recorded.</p>"
     }
   ]
 }
