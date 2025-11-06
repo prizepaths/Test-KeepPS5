@@ -141,25 +141,36 @@ function render(){
 }
 
 async function finish(){
-  try {
+  try{
     const p = new URL(location.href).searchParams;
-    await fetch(FORM_ENDPOINT,{
-      method: "POST",
-      headers: {"Content-Type":"application/json"},
-      body: JSON.stringify({
-        event: "response",
-        name: answers.name || "",
-        email: answers.email || "",
-        answers: answers,
-        user_agent: navigator.userAgent,
-        utm_source: p.get("utm_source") || "github-pages",
-        utm_medium: p.get("utm_medium") || "survey",
-        utm_campaign: p.get("utm_campaign") || ""
-      }),
-      mode: "no-cors"
-    });
-  } catch(e){ console.error(e); }
-  location.href = RESULTS_URL;
+    const payload = {
+      event: "response",
+      name: answers.name || "",
+      email: answers.email || "",
+      answers: answers,
+      user_agent: navigator.userAgent,
+      utm_source: p.get("utm_source") || "github-pages",
+      utm_medium: p.get("utm_medium") || "survey",
+      utm_campaign: p.get("utm_campaign") || ""
+    };
+    const body = JSON.stringify(payload);
+    let sent = false;
+    if (navigator.sendBeacon){
+      const blob = new Blob([body], {type: "text/plain"}); /* text/plain plays nice with beacon */
+      sent = navigator.sendBeacon(FORM_ENDPOINT, blob);
+    }
+    if (!sent){
+      /* Fallback: fetch with keepalive (survives unload in modern browsers) */
+      await fetch(FORM_ENDPOINT,{
+        method: "POST",
+        headers: {"Content-Type":"text/plain"},
+        body,
+        keepalive: true
+      });
+    }
+  }catch(e){ console.error(e);}
+  setTimeout(()=>location.href = RESULTS_URL, 300); /* small delay to be extra safe */
+}
 }
 }
 
