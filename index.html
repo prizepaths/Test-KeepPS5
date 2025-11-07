@@ -15,16 +15,18 @@
   }
   header,footer{background:var(--accent);color:#fff;}
   header{padding:10px 0;}
-  footer{padding:18px 0;margin-top:40px;}
+  footer{padding:18px 20px;margin-top:40px;}
   .brand{
     max-width:var(--max);
     margin:0 auto;
-    padding:0 20px;
     display:flex;
     align-items:center;
     justify-content:space-between;
+    flex-wrap:wrap;
+    gap:8px;
   }
   .brand h1{font-size:18px;margin:0;font-weight:600;letter-spacing:.3px;}
+  .disclaimer{font-size:13px;color:#ddd;}
   main{max-width:var(--max);margin:0 auto;padding:22px 20px 40px;}
   .stage{
     display:flex;
@@ -75,7 +77,6 @@
     border-radius:8px;
     font-size:16px;
   }
-  .notice{text-align:center;color:#777;font-size:14px;margin-top:16px;}
   .error{color:#c00;text-align:center;margin:18px 0;}
 </style>
 </head>
@@ -86,15 +87,18 @@
 
 <main>
   <section id="screen" class="stage"></section>
-  <p class="notice">Some links may be affiliate – we may earn a small commission at no extra cost to you.</p>
 </main>
 
-<footer><div class="brand"><small>© PrizePaths</small></div></footer>
+<footer>
+  <div class="brand">
+    <small>© PrizePaths</small>
+    <small class="disclaimer">Some links may be affiliate – we may earn a small commission & it never costs you extra.</small>
+  </div>
+</footer>
 
 <script>
 const FORM_ENDPOINT = "https://script.google.com/macros/s/AKfycbyt63oXcKEV52qZntQZtIh-LSAgP8XmDAsqiU8M_UuJm6uFJlwZNE779-wweeAAmQzN7Q/exec";
 const RESULTS_URL = "results.html";
-
 let config=null,n=0,answers={};
 const el=s=>document.querySelector(s);
 
