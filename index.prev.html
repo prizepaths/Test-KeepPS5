@@ -1,0 +1,185 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>Test & Keep a PS5</title>
+<style>
+  :root { --accent:#000; --max:980px; --btnw:520px; }
+  * { box-sizing: border-box; }
+  body { margin:0; font-family: system-ui,-apple-system,Segoe UI,Arial,sans-serif; background:#fff; color:#333; }
+  header, footer { background:var(--accent); color:#fff; }
+  header { padding:10px 0; }
+  footer { padding:18px 0; margin-top:40px; }
+  .brand { max-width:var(--max); margin:0 auto; padding:0 20px; display:flex; align-items:center; justify-content:space-between; }
+  .brand h1 { font-size:18px; margin:0; font-weight:600; letter-spacing:.3px; }
+  main { max-width:var(--max); margin:0 auto; padding:22px 20px 40px; }
+  .stage { display:flex; flex-direction:column; align-items:center; min-height:60vh; justify-content:center; }
+  .question { font-size:22px; line-height:1.4; color:#111; text-align:center; margin:16px 0 14px; }
+  .content { max-width:780px; margin:0 auto; text-align:center; }
+  .content img { max-width:560px; width:100%; height:auto; border-radius:10px; margin:12px auto 10px; display:block; }
+  .btn { display:block; width:100%; max-width:var(--btnw); background:var(--accent); color:#fff; text-align:center; border-radius:10px; border:0; padding:16px 14px; margin:10px 0; font-size:18px; cursor:pointer; transition:opacity .2s; }
+  .btn:hover { opacity:.88; }
+  .fieldwrap { display:flex; gap:10px; justify-content:center; flex-wrap:wrap; margin-top:8px; }
+  .fieldwrap input { width:260px; max-width:90vw; padding:12px 12px; border:1px solid #ccc; border-radius:8px; font-size:16px; }
+  .notice { text-align:center; color:#777; font-size:14px; margin-top:14px; }
+  .error { color:#c00; text-align:center; margin:18px 0; }
+</style>
+</head>
+<body>
+  <header>
+    <div class="brand">
+      <h1>PrizePaths</h1>
+      <div></div>
+    </div>
+  </header>
+
+  <main>
+    <section id="screen" class="stage"></section>
+    <p class="notice">Some links may be affiliate. If you click them, we may earn a commission at no extra cost to you.</p>
+  </main>
+
+  <footer>
+    <div class="brand"><small>© PrizePaths</small><small></small></div>
+  </footer>
+
+<script>
+const FORM_ENDPOINT = "https://script.google.com/macros/s/AKfycbyt63oXcKEV52qZntQZtIh-LSAgP8XmDAsqiU8M_UuJm6uFJlwZNE779-wweeAAmQzN7Q/exec";
+const RESULTS_URL = "results.html";
+
+let config = null;
+let n = 0;             // index into screens
+let answers = {};      // collected answers (name, email, q1..)
+const el = sel => document.querySelector(sel);
+
+function setError(msg){
+  el('#screen').innerHTML = '<p class="error">'+msg+'</p>';
+}
+
+async function loadConfig(){
+  try {
+    const r = await fetch('survey-config.json', {cache:'no-store'});
+    if(!r.ok){ throw new Error('HTTP '+r.status); }
+    config = await r.json();
+  } catch(e){
+    console.error(e);
+    setError('Could not load survey-config.json');
+    throw e;
+  }
+}
+
+function render(){
+  const s = config.screens[n];
+  if(!s){ finish(); return; }
+
+  const cont = document.createElement('div');
+  cont.className = 'content';
+
+  // optional image
+  if(s.image){
+    const img = document.createElement('img');
+    img.src = s.image;
+    img.alt = '';
+    cont.appendChild(img);
+  }
+
+  if(s.label){
+    const h = document.createElement('div');
+    h.className = 'question';
+    h.textContent = s.label;
+    cont.appendChild(h);
+  }
+
+  if(s.kind === 'fields'){
+    // expects ["name","email"]
+    const wrap = document.createElement('div');
+    wrap.className = 'fieldwrap';
+
+    (s.fields||[]).forEach(f=>{
+      const inp = document.createElement('input');
+      inp.type = f === 'email' ? 'email' : 'text';
+      inp.placeholder = f[0].toUpperCase()+f.slice(1);
+      inp.value = answers[f] || '';
+      inp.required = true;
+      inp.addEventListener('input', ()=> answers[f]=inp.value.trim());
+      wrap.appendChild(inp);
+    });
+
+    const next = document.createElement('button');
+    next.className = 'btn';
+    next.textContent = 'Next ›';
+    next.onclick = ()=>{
+      // simple validation: must have non-empty values
+      const need = (s.fields||[]);
+      for(const f of need){ if(!(answers[f]||'').trim()){ alert('Please enter your '+f+'.'); return; } }
+      n++; rerender();
+    };
+    cont.appendChild(wrap);
+    cont.appendChild(next);
+  }
+
+  if(s.kind === 'radio' && Array.isArray(s.options)){
+    s.options.forEach(opt=>{
+      const b = document.createElement('button');
+      b.className = 'btn';
+      b.textContent = opt.label || opt;
+      b.onclick = ()=>{
+        const qid = s.id || ('q'+(n+1));
+        answers[qid] = opt.label || opt;
+        // If this option has an affiliate href, record click first, then open and advance
+        if(opt.href){
+          try {
+            const clickPayload = {event:'affiliate_click',question_id:qid,option_value:(opt.label||opt),url:opt.href,user_agent:navigator.userAgent};
+            const blob = new Blob([JSON.stringify(clickPayload)], {type:'text/plain'});
+            if(navigator.sendBeacon){ navigator.sendBeacon(FORM_ENDPOINT, blob); }
+            else { fetch(FORM_ENDPOINT,{method:'POST',headers:{'Content-Type':'text/plain'},body:JSON.stringify(clickPayload),keepalive:true}); }
+          } catch(_e){}
+          window.open(opt.href, '_blank', 'noopener');
+        }
+        n++; rerender();
+      };
+      cont.appendChild(b);
+    });
+  }
+
+  const screen = el('#screen');
+  screen.innerHTML = '';
+  screen.appendChild(cont);
+}
+
+function rerender(){ requestAnimationFrame(render); }
+
+async function finish(){
+  try{
+    const p = new URL(location.href).searchParams;
+    const payload = {
+      event: 'response',
+      name: answers.name || '',
+      email: answers.email || '',
+      answers,
+      user_agent: navigator.userAgent,
+      utm_source: p.get('utm_source') || 'github-pages',
+      utm_medium: p.get('utm_medium') || 'survey',
+      utm_campaign: p.get('utm_campaign') || ''
+    };
+    const body = JSON.stringify(payload);
+    let sent=false;
+    if(navigator.sendBeacon){
+      sent = navigator.sendBeacon(FORM_ENDPOINT, new Blob([body],{type:'text/plain'}));
+    }
+    if(!sent){
+      await fetch(FORM_ENDPOINT,{method:'POST',headers:{'Content-Type':'text/plain'},body,keepalive:true});
+    }
+  }catch(e){ console.error(e); }
+  setTimeout(()=>location.href = RESULTS_URL, 300);
+}
+
+(async function init(){
+  await loadConfig();
+  n = 0;
+  answers = answers || {};
+  rerender();
+})();
+</script>
+</body>
+</html>
